@@ -1,13 +1,12 @@
 import pathlib 
 import argparse
-from config.env_vars import * 
+from config.basic_config import * 
 from datetime import datetime
 from FinDbManager.CreditCardDB import CreditCardDB
 from CreditCardManager.BofaCreditCard import BofaCreditCard
 from ReportGenerator.PlotGenerator import PlotGenerator
 from ReportGenerator.HtmlReportGenerator import BuildHtmlReport
 from CreditCardManager.DataCategorization.DataCategorizer import DataCategorizer, DataCategorizationDb
-
 
 def SetupOpts(): 
     parser = argparse.ArgumentParser(description = "Financial Tracker Application")
