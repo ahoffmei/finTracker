@@ -5,8 +5,7 @@ from abc import ABC, abstractmethod
 
 
 class CreditCardExtractorBase(ABC): 
-    def __init__(self, name : str, issuer : str):
-        self.name           = name 
+    def __init__(self, issuer : str):
         self.issuer         = issuer 
         self.credit_card_df = None 
 

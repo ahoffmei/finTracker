@@ -21,7 +21,7 @@ if __name__ == "__main__":
     args = SetupOpts() 
     
     # Extract credit card data
-    cc_handle = BofaCreditCard(args.excel_path)  
+    cc_handle = BofaCreditCard()  
     cc_handle.extractCreditCardFromExcelOrCsv(args.excel_path)
     cc_rollup_df = cc_handle.getRollupPayments(cc_handle.credit_card_df)
 

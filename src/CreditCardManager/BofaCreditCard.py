@@ -16,12 +16,11 @@ if match:
 from CreditCardManager.CreditCardExtraction import CreditCardExtractorBase
 
 class BofaCreditCard(CreditCardExtractorBase):
-    def __init__(self, name):
+    def __init__(self):
         self.CC_NAME = 'BANK_OF_AMERICA'
 
-        super().__init__(name, self.CC_NAME)
+        super().__init__(self.CC_NAME)
         
-
     
     def ___payemntDataProcessing___(self) -> None:
         '''
@@ -35,10 +34,10 @@ class BofaCreditCard(CreditCardExtractorBase):
         self.credit_card_df['Amount'] = self.credit_card_df['Amount'] * -1 
 
         # Determine base payee names 
-        self.__determineBasePayeeName__()
+        self.__determineBasePayeeNames__()
         
     
-    def __determineBasePayeeName__(self):
+    def __determineBasePayeeNames__(self):
         for i in self.credit_card_df.index:
             full_payee_str = self.credit_card_df.at[i, 'Payee']
 
@@ -74,7 +73,7 @@ class BofaCreditCard(CreditCardExtractorBase):
 
     def getCreditCardDf(self):
         df = self.credit_card_df.__deepcopy__() 
-        df['credit_card_name'] = "BANK_OF_AMERICA"
+        df['credit_card_name'] = self.CC_NAME
         return df 
 
 
