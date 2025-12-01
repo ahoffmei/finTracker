@@ -1,6 +1,8 @@
 import os 
 import pathlib 
 import pandas as pd 
+from io import BytesIO
+from typing import Union
 from abc import ABC, abstractmethod
 
 
@@ -30,6 +32,10 @@ class CreditCardExtractorBase(ABC):
         return self.credit_card_df
 
 
+    def setCreditCardDF(self, cc_df) -> None:
+        self.credit_card_df = cc_df
+
+
     def extractCreditCardFromExcelOrCsv(self, table_path : pathlib.Path) -> None:
         ''' 
         @brief      Conert excel or csv to df
@@ -45,12 +51,6 @@ class CreditCardExtractorBase(ABC):
                 raise ValueError(f"Unsupported file: {table_path}. Must be csv of xlsx.")
         else:
             raise FileExistsError(f"Excel path {table_path} DNE")
-    
         # Apply post processing 
         self.___payemntDataProcessing___() 
-        
-    
-
-
-
     
