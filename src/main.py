@@ -30,8 +30,9 @@ if __name__ == "__main__":
     args = setupOpts() 
     
     setupLocalDependencies()
-    cc_handle = BofaCreditCard()  
-    
+    cc_handle    = BofaCreditCard()  
+    cc_db_handle = CreditCardDB(FIN_DB_PATH) 
+
     # Extract credit card data
     if args.excel_path:
         cc_handle.extractCreditCardFromExcelOrCsv(args.excel_path)
@@ -41,19 +42,21 @@ if __name__ == "__main__":
         data_categorizer_handle = DataCategorizer(CATEGORIZATION_DB_PATH)
         data_categorizer_handle.categorizeFromArray(list(cc_rollup_df['Payee']))
         
-    # Insert Data Into DB
-    cc_df = cc_handle.getCreditCardDf()
-    cc_db_handle = CreditCardDB(FIN_DB_PATH) 
-    cc_db_handle.dbWriteFromDf(cc_df)
+        # Insert Data Into DB
+        cc_df = cc_handle.getCreditCardDf()
+        cc_db_handle.dbWriteFromDf(cc_df)
+
+    # Extract payment database
+    
 
     # Build Report
-    plot_gen_handle = PlotGenerator(FIN_DB_PATH) # For now use FIN_DB_PATH to store anything if we need
-    fig = plot_gen_handle.createBarChartFromDf(cc_rollup_df, 'Payee', 'Amount', '')
+    # plot_gen_handle = PlotGenerator(FIN_DB_PATH) # For now use FIN_DB_PATH to store anything if we need
+    # fig = plot_gen_handle.createBarChartFromDf(TODO, 'Payee', 'Amount', '')
     
-    html_handle = BuildHtmlReport(None, f"Report Summary: {datetime.now()}")
-    html_handle.appendFig(fig)
-    html_handle.appendWidget("Total Monthly Spending", round(float(cc_rollup_df['Amount'].sum()), 2))    
-    html_handle.finalizeHtml()
+    # html_handle = BuildHtmlReport(None, f"Report Summary: {datetime.now()}")
+    # html_handle.appendFig(fig)
+    # html_handle.appendWidget("Total Monthly Spending", round(float(cc_rollup_df['Amount'].sum()), 2))    
+    # html_handle.finalizeHtml()
 
     
 

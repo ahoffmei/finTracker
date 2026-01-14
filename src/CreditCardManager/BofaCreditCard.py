@@ -22,7 +22,7 @@ class BofaCreditCard(CreditCardExtractorBase):
         super().__init__(self.CC_NAME)
         
     
-    def ___payemntDataProcessing___(self) -> None:
+    def ___paymentDataProcessing___(self) -> None:
         '''
         @brief  Apply post extraction processing to self.credit_card_df
         @note   Implements abstract method from CreditCardExtractorBase
@@ -33,6 +33,9 @@ class BofaCreditCard(CreditCardExtractorBase):
         # Turn amount paid into a positive value          
         self.credit_card_df['Amount'] = self.credit_card_df['Amount'] * -1 
 
+        # TODO: add segment to add key
+
+        
         # Determine base payee names 
         self.__determineBasePayeeNames__()
         

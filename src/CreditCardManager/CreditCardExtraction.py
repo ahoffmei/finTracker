@@ -13,7 +13,7 @@ class CreditCardExtractorBase(ABC):
 
 
     @abstractmethod
-    def ___payemntDataProcessing___(self) -> None:
+    def ___paymentDataProcessing___(self) -> None:
         '''
         @brief  Apply post extraction processing to self.credit_card_df
         '''
@@ -52,5 +52,5 @@ class CreditCardExtractorBase(ABC):
         else:
             raise FileExistsError(f"Excel path {table_path} DNE")
         # Apply post processing 
-        self.___payemntDataProcessing___() 
+        self.___paymentDataProcessing___() 
     

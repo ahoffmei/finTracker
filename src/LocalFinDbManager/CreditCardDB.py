@@ -2,6 +2,7 @@ import os
 import re 
 import sys 
 import pathlib 
+import hashlib 
 import calendar
 import argparse
 import pandas as pd 
@@ -28,6 +29,7 @@ CREATE TABLE credit_cards_table (
 '''
 CREATE TABLE credit_card_payments (
     payment_id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    hash_key            STRING NOT NULL UNIQUE, 
     credit_card_name    TEXT NOT NULL,
     payment_date        DATE NOT NULL,
     amount_paid         REAL NOT NULL,
@@ -53,6 +55,11 @@ class CreditCardDB(DB_Interface_Base):
 
         return report_package        
     
+    @staticmethod
+    def createCreditCardKey(name, payment, amount, payee):
+        full_str = f"{name}|{payment}|{amount}|{payee}" 
+        return hashlib.sha256(full_str.encode("utf-8")).hexdigest() 
+
     
     def getDateRangeDefinedData(self, start_date : datetime, end_date : datetime):
         """
@@ -80,7 +87,7 @@ class CreditCardDB(DB_Interface_Base):
         TODO
         """
         df_copy = df.__deepcopy__()
-        df_copy = df_copy[['credit_card_name', 'payment_date', 'amount_paid', 'payee']]
+        df_copy = df_copy[['hash_key', 'credit_card_name', 'payment_date', 'amount_paid', 'payee']]
 
         self._writeDf(df_copy, 'credit_card_payments')
 
