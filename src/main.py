@@ -1,44 +1,50 @@
+import os 
 import pathlib 
 import argparse
-from config.basic_config import * 
+from config.basic_config import FIN_DB_PATH, CATEGORIZATION_DB_PATH
 from datetime import datetime
-from FinDbManager.CreditCardDB import CreditCardDB
+from LocalFinDbManager.CreditCardDB import CreditCardDB
 from CreditCardManager.BofaCreditCard import BofaCreditCard
 from ReportGenerator.PlotGenerator import PlotGenerator
 from ReportGenerator.HtmlReportGenerator import BuildHtmlReport
 from CreditCardManager.DataCategorization.DataCategorizer import DataCategorizer, DataCategorizationDb
 
-def SetupOpts(): 
+
+def setupLocalDependencies():
+    if not FIN_DB_PATH.exists():
+        os.makedirs(FIN_DB_PATH)
+    if not CATEGORIZATION_DB_PATH.exists():
+        os.makedirs(CATEGORIZATION_DB_PATH) 
+
+
+def setupOpts(): 
     parser = argparse.ArgumentParser(description = "Financial Tracker Application")
 
-    parser.add_argument("-e", "--excel-path", dest = "excel_path", type  = pathlib.Path, required=True,  
+    parser.add_argument("-e", "--excel-path", dest = "excel_path", type  = pathlib.Path, required=False, default=None, 
                         help = "Path to BofA excel export" )
 
     return parser.parse_args() 
 
 
 if __name__ == "__main__":
-    args = SetupOpts() 
+    args = setupOpts() 
+    
+    setupLocalDependencies()
+    cc_handle = BofaCreditCard()  
     
     # Extract credit card data
-    cc_handle = BofaCreditCard()  
-    cc_handle.extractCreditCardFromExcelOrCsv(args.excel_path)
-    cc_rollup_df = cc_handle.getRollupPayments(cc_handle.credit_card_df)
+    if args.excel_path:
+        cc_handle.extractCreditCardFromExcelOrCsv(args.excel_path)
+        cc_rollup_df = cc_handle.getRollupPayments(cc_handle.credit_card_df)
 
-    # Categorize Data     
-    data_categorizer_handle = DataCategorizer(CATEGORIZATION_DB_PATH)
-    data_categorizer_handle.categorizeFromArray(list(cc_rollup_df['Payee']))
-    # TODO - eventually feed categorizations into spendings report somehow  
-    
-    # basic_report_info = cc_handle.getBasicReportInfoForMonth(datetime.now().month, datetime.now().month) 
-    
+        # Categorize Data     
+        data_categorizer_handle = DataCategorizer(CATEGORIZATION_DB_PATH)
+        data_categorizer_handle.categorizeFromArray(list(cc_rollup_df['Payee']))
+        
     # Insert Data Into DB
     cc_df = cc_handle.getCreditCardDf()
     cc_db_handle = CreditCardDB(FIN_DB_PATH) 
     cc_db_handle.dbWriteFromDf(cc_df)
-
-
-    breakpoint() 
 
     # Build Report
     plot_gen_handle = PlotGenerator(FIN_DB_PATH) # For now use FIN_DB_PATH to store anything if we need

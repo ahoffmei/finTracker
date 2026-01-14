@@ -5,8 +5,7 @@ import pathlib
 from rapidfuzz import fuzz 
 
 # Import repo dependencies 
-match = re.search(r".*fintracker\\src", os.path.abspath(__file__))
-src_path = str(pathlib.Path(match.group()))
+src_path = str(pathlib.Path(__file__).parent.parent.parent)
 if src_path not in sys.path:
     sys.path.append(src_path)
 
