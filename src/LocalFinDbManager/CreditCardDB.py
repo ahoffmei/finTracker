@@ -54,17 +54,41 @@ class CreditCardDB(DB_Interface_Base):
         report_package['monthly_spending'] = self.getRollupPayments(target_df)
 
         return report_package        
-    
+
+
     @staticmethod
-    def createCreditCardKey(name, payment, amount, payee):
-        full_str = f"{name}|{payment}|{amount}|{payee}" 
+    def createSubmissionKey(name, payment_date, amount, payee):
+        """
+        Creates a key used for identifying payments. Used to prevent duplicate payments upon submission
+
+        credit_card_name    TEXT NOT NULL,
+        payment_date        DATE NOT NULL,
+        amount_paid         REAL NOT NULL,
+        payee               TEXT NOT NULL,
+        """
+        full_str = f"{name}|{payment_date}|{amount}|{payee}" 
         return hashlib.sha256(full_str.encode("utf-8")).hexdigest() 
 
-    
+
+    def getRequiredMappings(self):
+        return [ "hash_key", "credit_card_name", "payment_date", "amount_paid", "payee" ]
+
+
+    def getKeys(self):
+        """
+        Get all keys from the database (reduce later)
+        """ 
+        query = f"SELECT hash_key from credit_card_payments"
+
+        df = self._readDb(query) 
+
+        return df["hash_key"]
+
     def getDateRangeDefinedData(self, start_date : datetime, end_date : datetime):
         """
-        TODO
+        Based on a start_date and end_date, grabs all payments from the given daterange
         """
+        # TODO use query params 
         query = f"SELECT * FROM credit_card_payments WHERE payment_date BETWEEN '{start_date.strftime('%Y-%m-%d')}' and '{end_date.strftime('%Y-%m-%d')}'" 
         
         return self._readDb(query) 
@@ -72,13 +96,12 @@ class CreditCardDB(DB_Interface_Base):
 
     def getBasicReportInfoForMonth(self, month : int, year : int) -> dict:
         """
-        TODO
+        Get report info for a given month
         """
         month_df = self.getDateRangeDefinedData(
             datetime(year, month, 1), 
             datetime(year, month, calendar.monthrange(year, month)[1])
         )
-
         return month_df.___getBasicReportInfo___()
 
 
@@ -87,9 +110,41 @@ class CreditCardDB(DB_Interface_Base):
         TODO
         """
         df_copy = df.__deepcopy__()
-        df_copy = df_copy[['hash_key', 'credit_card_name', 'payment_date', 'amount_paid', 'payee']]
+        df_copy = df_copy[['hash_key', 'credit_card_name', 'payment_date', 'amount_paid', 'payee', 'hash_key']]
 
+        
         self._writeDf(df_copy, 'credit_card_payments')
+
+    
+    def getDbAsDf(self):
+        return self._readDb("SELECT * FROM credit_card_payments") 
+
+
+# Getting the vibe that this should be handled by BofaCreditCard
+def cleanDbDataFromDf(df : pd.DataFrame, cc_name : str, existing_keys : list | set, column_mappings : dict): 
+    df = df.__deepcopy__()
+
+    df["credit_card_name"] = cc_name
+    df["hash_key"]    = "" 
+    indexes_to_drop   = []
+    
+    for index, row in df.iterrows():        
+        key = CreditCardDB.createSubmissionKey(
+            name         = cc_name, 
+            payment_date = row[column_mappings["payment_date"]], 
+            amount       = row[column_mappings["amount_paid"]], 
+            payee        = row[column_mappings["payee"]]
+        )        
+
+        if key in existing_keys:
+            indexes_to_drop.append(index)
+        else:
+            existing_keys.add(key)
+            df.loc[index, "hash_key"] = key  
+
+    df = df.drop(index=indexes_to_drop)
+    
+    return df 
 
 
 def SetupOpts(): 
@@ -100,7 +155,6 @@ def SetupOpts():
     
     parser.add_argument("-d", "--db-path", dest = "db_path", type = pathlib.Path, default=FIN_DB_PATH,
                         help = "Path to database directory" )
-
 
     return parser.parse_args() 
 

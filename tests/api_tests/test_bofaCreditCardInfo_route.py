@@ -9,7 +9,7 @@ def testUploadBofaCcDataExcel():
         files = {"file": f}
         response = requests.post(url, files=files)
 
-    print(response.json)
+    print(response.json())
 
 
 def testTest(): 

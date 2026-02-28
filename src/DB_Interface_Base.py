@@ -34,8 +34,8 @@ class DB_Interface_Base(ABC):
             raise NotADirectoryError(f"Input base_db_path is not a directory: {self.base_db_path}")
 
 
-    def __del__(self):
-        self.___close___()
+    # def __del__(self):
+    #     self.___close___()
 
 
     def ___connect___(self): 
@@ -126,6 +126,7 @@ class DB_Interface_Base(ABC):
             df.to_sql(
                 name      = table_name,  
                 con       = self.__connection,          
+                if_exists = "append", 
                 index     = False         
             )
         except sqlite3.Error as e: 
@@ -133,6 +134,8 @@ class DB_Interface_Base(ABC):
             raise Exception(f"DB error when writing df to {table_name}")
         finally:
             self.___close___()
+
+
 
 
     def exportToCsv(self):

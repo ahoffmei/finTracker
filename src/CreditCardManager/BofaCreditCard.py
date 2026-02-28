@@ -33,8 +33,6 @@ class BofaCreditCard(CreditCardExtractorBase):
         # Turn amount paid into a positive value          
         self.credit_card_df['Amount'] = self.credit_card_df['Amount'] * -1 
 
-        # TODO: add segment to add key
-
         
         # Determine base payee names 
         self.__determineBasePayeeNames__()
@@ -76,7 +74,7 @@ class BofaCreditCard(CreditCardExtractorBase):
 
     def getCreditCardDf(self):
         df = self.credit_card_df.__deepcopy__() 
-        df['credit_card_name'] = self.CC_NAME
+        df["credit_card_name"] = self.CC_NAME
         return df 
 
 

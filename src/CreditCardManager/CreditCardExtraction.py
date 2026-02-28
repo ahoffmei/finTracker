@@ -28,7 +28,7 @@ class CreditCardExtractorBase(ABC):
         pass  
 
 
-    def getCreditCardDF(self) -> pd.DataFrame: 
+    def getCreditCardDf(self) -> pd.DataFrame: 
         return self.credit_card_df
 
 
