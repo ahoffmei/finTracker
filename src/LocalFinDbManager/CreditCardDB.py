@@ -88,21 +88,25 @@ class CreditCardDB(DB_Interface_Base):
         """
         Based on a start_date and end_date, grabs all payments from the given daterange
         """
+        mdy_format = '%m-%d-%y'
         # TODO use query params 
-        query = f"SELECT * FROM credit_card_payments WHERE payment_date BETWEEN '{start_date.strftime('%Y-%m-%d')}' and '{end_date.strftime('%Y-%m-%d')}'" 
-        
+        query = f"SELECT * FROM credit_card_payments WHERE payment_date BETWEEN '{start_date.strftime(mdy_format)}' and '{end_date.strftime(mdy_format)}'" 
+        breakpoint()
         return self._readDb(query) 
         
 
-    def getBasicReportInfoForMonth(self, month : int, year : int) -> dict:
+    def getCurrentMonthCcInfo(self) -> dict:
         """
         Get report info for a given month
         """
-        month_df = self.getDateRangeDefinedData(
+        now   = datetime.now() 
+        year  = now.year 
+        month = now.month
+
+        return self.getDateRangeDefinedData(
             datetime(year, month, 1), 
             datetime(year, month, calendar.monthrange(year, month)[1])
         )
-        return month_df.___getBasicReportInfo___()
 
 
     def dbWriteFromDf(self, df : pd.DataFrame) -> None: 

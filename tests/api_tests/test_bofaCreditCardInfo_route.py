@@ -3,8 +3,8 @@ import json
 
 LOCAL_HOST = r'http://127.0.0.1:5000/bofaCreditCardInfo' 
 
-def testUploadBofaCcDataExcel():
-    url = LOCAL_HOST + "/uploadBofaCcDataCsv"
+def testUploadBofaCcDataExcel(base_url):
+    url = base_url + "/uploadBofaCcDataCsv"
     with open(r"C:\Users\Adam\Downloads\November2025_5226.csv", 'rb') as f: 
         files = {"file": f}
         response = requests.post(url, files=files)
@@ -12,11 +12,11 @@ def testUploadBofaCcDataExcel():
     print(response.json())
 
 
-def testTest(): 
-    url = LOCAL_HOST + "/test"
+def testTest(base_url): 
+    url = base_url+ "/test"
     response = requests.get(url)
     print(response.text)
 
 
-testTest()
-testUploadBofaCcDataExcel()
+testTest(LOCAL_HOST)
+testUploadBofaCcDataExcel(LOCAL_HOST)

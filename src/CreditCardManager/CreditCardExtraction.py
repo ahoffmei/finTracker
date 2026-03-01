@@ -21,7 +21,7 @@ class CreditCardExtractorBase(ABC):
 
 
     @abstractmethod
-    def getDfColumnMapping(self) -> dict:
+    def getDfColumnMapping(self, reverse_mappings = False) -> dict:
         '''
         @brief  Get a dictionary mapping of which dataframe columns map to which value in the database
         '''
@@ -34,6 +34,7 @@ class CreditCardExtractorBase(ABC):
 
     def setCreditCardDF(self, cc_df) -> None:
         self.credit_card_df = cc_df
+        self.___paymentDataProcessing___()
 
 
     def extractCreditCardFromExcelOrCsv(self, table_path : pathlib.Path) -> None:

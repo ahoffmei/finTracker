@@ -83,7 +83,7 @@ class BofaCreditCard(CreditCardExtractorBase):
         return target_df.groupby('Payee', as_index=False)['Amount'].sum() 
 
 
-    def getDfColumnMapping(self) -> dict:
+    def getDfColumnMapping(self, reverse_mappings = False) -> dict:
         '''
         @brief  Get a dictionary mapping of which dataframe columns map to which value in the database
         @note   Implements abstract method from CreditCardExtractorBase
@@ -93,7 +93,10 @@ class BofaCreditCard(CreditCardExtractorBase):
             "payee"          : "Payee",
             "amount_paid"    : "Amount"
         }
-
+        
+        if reverse_mappings:
+            df_col_mappings = {val : key for key,val in df_col_mappings.items()} # TODO - find a better wayy to do this 
+        
         return df_col_mappings 
     
 

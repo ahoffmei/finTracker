@@ -14,6 +14,7 @@ if match:
     if src_path not in sys.path:
         sys.path.append(src_path)
 
+from main import processCcDf, setupLocalDependencies
 from CreditCardManager.BofaCreditCard import BofaCreditCard
 from LocalFinDbManager.CreditCardDB import CreditCardDB, cleanDbDataFromDf
 from config.env_vars import * 
@@ -41,19 +42,11 @@ def uploadBofaCcDataCsv():
 
     # Being processing function, TODO: actually just package this all in a function --> also eventually make not sqlite
     try:
+        setupLocalDependencies() 
         cc_handle = BofaCreditCard()
+        db_handle = CreditCardDB(FIN_DB_PATH)
         cc_handle.setCreditCardDF(df)
-
-        column_mappings = cc_handle.getDfColumnMapping() 
-        db_handle =  CreditCardDB(FIN_DB_PATH) 
-        cc_df = cleanDbDataFromDf(df, cc_handle.CC_NAME, set(db_handle.getKeys()), column_mappings)    
-
-        reversed_mappings = {val : key for key,val in column_mappings.items()} # TODO - find a better wayy to do this 
-        cc_df.rename(columns = reversed_mappings, inplace = True)
-        cc_df = cc_df[db_handle.getRequiredMappings()]
-        
-        # finally insert  
-        db_handle.dbWriteFromDf(cc_df)
+        processCcDf(cc_handle=cc_handle, db_handle=db_handle)
 
     except Exception as E: 
         return jsonify({
