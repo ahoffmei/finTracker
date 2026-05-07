@@ -73,7 +73,6 @@ if __name__ == "__main__":
 
     # Build Report
     plot_gen_handle = PlotGenerator(FIN_DB_PATH) # For now use FIN_DB_PATH to store anything if we need
-    # df = db_handle.getDbAsDf()
     a, b = datetime.now() - relativedelta(months=2) , datetime.now() 
     df = db_handle.getDateRangeDefinedData(a, b)
     breakpoint()

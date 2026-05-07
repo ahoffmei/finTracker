@@ -84,6 +84,7 @@ class CreditCardDB(DB_Interface_Base):
 
         return df["hash_key"]
 
+
     def getDateRangeDefinedData(self, start_date : datetime, end_date : datetime):
         """
         Based on a start_date and end_date, grabs all payments from the given daterange
@@ -91,7 +92,6 @@ class CreditCardDB(DB_Interface_Base):
         mdy_format = '%m-%d-%y'
         # TODO use query params 
         query = f"SELECT * FROM credit_card_payments WHERE payment_date BETWEEN '{start_date.strftime(mdy_format)}' and '{end_date.strftime(mdy_format)}'" 
-        breakpoint()
         return self._readDb(query) 
         
 
@@ -111,9 +111,10 @@ class CreditCardDB(DB_Interface_Base):
 
     def dbWriteFromDf(self, df : pd.DataFrame) -> None: 
         """
-        TODO
+        Write to sql db from dataframe. Assumes dataframe contains desired table elements. 
         """
         df_copy = df.__deepcopy__()
+        # Maybe make keys an input idk, TODO why hash_key twice
         df_copy = df_copy[['hash_key', 'credit_card_name', 'payment_date', 'amount_paid', 'payee', 'hash_key']]
 
         
@@ -159,6 +160,8 @@ def SetupOpts():
     
     parser.add_argument("-d", "--db-path", dest = "db_path", type = pathlib.Path, default=FIN_DB_PATH,
                         help = "Path to database directory" )
+    
+    parser.add_argument("--debug", dest="DEBUG", action="store_true", help="Developer debugging option")
 
     return parser.parse_args() 
 
@@ -167,6 +170,15 @@ if __name__ == "__main__":
     args = SetupOpts() 
 
     db_handle = CreditCardDB(args.db_path)
-    
+
+    if args.DEBUG:
+        # TODO DELETE
+        sd = datetime(2025,2,12)
+        ed = datetime.now()
+        data_now = db_handle.getCurrentMonthCcInfo()
+        data = db_handle.getDateRangeDefinedData(sd, ed)
+        breakpoint()
+        print("Debugging finished")
+
     if args.export:
         db_handle.exportToCsv() 
