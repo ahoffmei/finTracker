@@ -5,11 +5,12 @@ import pandas as pd
 from dateutil.relativedelta import relativedelta
 from config.env_vars import FIN_DB_PATH, CATEGORIZATION_DB_PATH
 from datetime import datetime
-from LocalFinDbManager.CreditCardDB import CreditCardDB, cleanDbDataFromDf
+from LocalFinDbManager.CreditCardDB import CreditCardDB 
 from CreditCardManager.BofaCreditCard import BofaCreditCard
 from ReportGenerator.PlotGenerator import PlotGenerator
 from ReportGenerator.HtmlReportGenerator import BuildHtmlReport
 from CreditCardManager.DataCategorization.DataCategorizer import DataCategorizer, DataCategorizationDb
+from DataAnalysis.SpendingAnalysisLayer import SpendingAnalysisManager
 
 
 def setupLocalDependencies():
@@ -23,8 +24,7 @@ def processCcDf(cc_handle : BofaCreditCard, db_handle : CreditCardDB):
     """
     @brief  Handle E2E processing of creditcard dataframe
     """
-    cc_rollup_df = cc_handle.getRollupPayments(cc_handle.credit_card_df)
-
+    cc_rollup_df    = cc_handle.getRollupPayments(cc_handle.credit_card_df)
     column_mappings = cc_handle.getDfColumnMapping() 
 
     # Categorize Data     
@@ -33,15 +33,10 @@ def processCcDf(cc_handle : BofaCreditCard, db_handle : CreditCardDB):
     
     # Clean data to remove duplicates potentially  
     df = cc_handle.getCreditCardDf()
-    cc_df = cleanDbDataFromDf(df, cc_handle.CC_NAME, set(db_handle.getKeys()), column_mappings)    
+    cc_df = db_handle.cleanDbDataFromDf(df, cc_handle.CC_NAME, set(db_handle.getKeys()), column_mappings)    
 
-    # Perform some cleanup  
-    reversed_mappings = cc_handle.getDfColumnMapping(True) 
-    cc_df.rename(columns = reversed_mappings, inplace = True)
-    cc_df = cc_df[db_handle.getRequiredMappings()]
-    
+    # insert  
     print(f"Inserting {len(cc_df)} elements")
-    # finally insert  
     db_handle.dbWriteFromDf(cc_df)
 
 
@@ -66,6 +61,7 @@ if __name__ == "__main__":
         cc_handle.extractCreditCardFromExcelOrCsv(args.excel_path)
         processCcDf(cc_handle=cc_handle, db_handle = db_handle)
 
+    # Stupid temporary debugging method 
     if args.debug_db:
         db = db_handle.getDbAsDf()
         breakpoint() 
@@ -73,10 +69,14 @@ if __name__ == "__main__":
 
     # Build Report
     plot_gen_handle = PlotGenerator(FIN_DB_PATH) # For now use FIN_DB_PATH to store anything if we need
-    a, b = datetime.now() - relativedelta(months=2) , datetime.now() 
+    a, b = datetime.now() - relativedelta(months=7) , datetime.now() 
     df = db_handle.getDateRangeDefinedData(a, b)
+    spending_manager = SpendingAnalysisManager(df)
+    s = spending_manager.getMonthlySummary()
+    
     breakpoint()
     fig = plot_gen_handle.createBarChartFromDf(df, 'payee', 'amount_paid', '')
+
     
     html_handle = BuildHtmlReport(None, f"Report Summary: {datetime.now()}")
     html_handle.appendFig(fig)

@@ -1,10 +1,11 @@
 import os
 import re 
 import sys 
-import pathlib 
+import pathlib
 import hashlib 
 import calendar
 import argparse
+import sqlparams  
 import pandas as pd 
 from datetime import datetime 
 
@@ -89,15 +90,31 @@ class CreditCardDB(DB_Interface_Base):
         """
         Based on a start_date and end_date, grabs all payments from the given daterange
         """
-        mdy_format = '%m-%d-%y'
-        # TODO use query params 
-        query = f"SELECT * FROM credit_card_payments WHERE payment_date BETWEEN '{start_date.strftime(mdy_format)}' and '{end_date.strftime(mdy_format)}'" 
-        return self._readDb(query) 
+        mdy_format = '%Y-%m-%d'
+        
+        # Generate query 
+        query = sqlparams.SQLParams('named', 'qmark')
+        sql, params = query.format("SELECT * FROM credit_card_payments WHERE payment_date BETWEEN :start AND :end", 
+            {"start" : start_date.strftime(mdy_format), 
+             "end"   : end_date.strftime(mdy_format)
+        }) 
+
+        return self._readDb(sql, params) 
+        
+
+    def getYearMonthCcInfo(self, year, month) -> dict:
+        """
+        Get report info for a given month for a given year 
+        """
+        return self.getDateRangeDefinedData(
+            datetime(year, month, 1), 
+            datetime(year, month, calendar.monthrange(year, month)[1])
+        )
         
 
     def getCurrentMonthCcInfo(self) -> dict:
         """
-        Get report info for a given month
+        Get report for the current month 
         """
         now   = datetime.now() 
         year  = now.year 
@@ -114,10 +131,10 @@ class CreditCardDB(DB_Interface_Base):
         Write to sql db from dataframe. Assumes dataframe contains desired table elements. 
         """
         df_copy = df.__deepcopy__()
-        # Maybe make keys an input idk, TODO why hash_key twice
-        df_copy = df_copy[['hash_key', 'credit_card_name', 'payment_date', 'amount_paid', 'payee', 'hash_key']]
 
-        
+        # Maybe make keys an input idk, TODO why hash_key twice
+        df_copy = df_copy[['hash_key', 'credit_card_name', 'payment_date', 'amount_paid', 'payee']]
+
         self._writeDf(df_copy, 'credit_card_payments')
 
     
@@ -125,31 +142,40 @@ class CreditCardDB(DB_Interface_Base):
         return self._readDb("SELECT * FROM credit_card_payments") 
 
 
-# Getting the vibe that this should be handled by BofaCreditCard
-def cleanDbDataFromDf(df : pd.DataFrame, cc_name : str, existing_keys : list | set, column_mappings : dict): 
-    df = df.__deepcopy__()
+    # Getting the vibe that this should be handled by BofaCreditCard
+    def cleanDbDataFromDf(self, df : pd.DataFrame, cc_name : str, existing_keys : list | set, column_mappings : dict): 
+        df = df.__deepcopy__()
 
-    df["credit_card_name"] = cc_name
-    df["hash_key"]    = "" 
-    indexes_to_drop   = []
-    
-    for index, row in df.iterrows():        
-        key = CreditCardDB.createSubmissionKey(
-            name         = cc_name, 
-            payment_date = row[column_mappings["payment_date"]], 
-            amount       = row[column_mappings["amount_paid"]], 
-            payee        = row[column_mappings["payee"]]
-        )        
+        df["credit_card_name"] = cc_name
+        df["hash_key"]    = "" 
+        indexes_to_drop   = []
+        
+        for index, row in df.iterrows():
+            key = CreditCardDB.createSubmissionKey(
+                name         = cc_name, 
+                payment_date = row[column_mappings["payment_date"]], 
+                amount       = row[column_mappings["amount_paid"]], 
+                payee        = row[column_mappings["payee"]]
+            )        
 
-        if key in existing_keys:
-            indexes_to_drop.append(index)
-        else:
-            existing_keys.add(key)
-            df.loc[index, "hash_key"] = key  
+            if key in existing_keys:
+                indexes_to_drop.append(index)
+            else:
+                existing_keys.add(key)
+                df.loc[index, "hash_key"] = key  
 
-    df = df.drop(index=indexes_to_drop)
-    
-    return df 
+        # Perform some remaining cleanup 
+        df = df.drop(index = indexes_to_drop)
+
+        # Fix the names 
+        reversed_mappings  = {v : k for k,v in column_mappings.items()}
+        df.rename(columns  = reversed_mappings, inplace = True)
+        df = df[self.getRequiredMappings()]
+
+        # Make the datetime strings into datetime objects
+        df["payment_date"] = pd.to_datetime(df["payment_date"])
+
+        return df 
 
 
 def SetupOpts(): 

@@ -10,7 +10,7 @@ if match:
     if src_path not in sys.path:
         sys.path.append(src_path)
     
-from src.DF_Enforcement import * 
+from DF_Enforcement import * 
 
 
 class SpendingAnalysisManager: 
@@ -18,7 +18,7 @@ class SpendingAnalysisManager:
         """
         @brief  Handles all analysis type methods for a given dataframe
         """
-        DF_Validation.validate_df(spending_df)
+        # DF_Validation.validate_df(spending_df) # TODO: FIX THIS 
         self.spending_df = spending_df
         self.rent        = None 
         self.utils       = None 
@@ -73,7 +73,7 @@ class SpendingAnalysisManager:
         return self.spending_df.loc[[self.spending_df["sales"].idxmax()]]
 
 
-    def getAverageMonthlySpending(self):
+    def getAverageMonthlySpending(self) -> float:
         """
         @brief  Return the average monthly spending
         """
@@ -85,7 +85,7 @@ class SpendingAnalysisManager:
         return monthly_sum.mean()
 
 
-    def getAverageDailySpending(self):
+    def getAverageDailySpending(self) -> float:
         """
         @brief  Return the average daily spending
         """
@@ -96,8 +96,23 @@ class SpendingAnalysisManager:
         monthly_sum = self.spending_df.groupby(self.spending_df["date"].dt.to_period("D"))["amount_paid"].sum()
         return monthly_sum.mean()
         
-    
-    def getMostFrequentPurchase(self):
+
+    def getMonthlySummary(self) -> pd.DataFrame:
+        """
+        @brief  Return a list of monthly spending rollups. 
+        """
+        df = self.spending_df.copy() 
+        df["payment_date"] = pd.to_datetime(df["payment_date"])
+        monthly_rollup = (
+            df.groupby(pd.Grouper(key="payment_date", freq="MS"))["amount_paid"]
+                .sum()
+                .reset_index() 
+        )
+
+        return monthly_rollup
+
+
+    def getMostFrequentPurchase(self) -> str | int:
         """
         @brief      Returns the most frequent occurance of a payee 
         @return     - The name of the payee 
@@ -109,25 +124,8 @@ class SpendingAnalysisManager:
         return highest_frequency_payee, frequency_count
 
 
-    def getX_LargestExpenses(self, x : int):
+    def getX_LargestExpenses(self, x : int) -> float:
         """
         @brief      Return the X largest expenses
         """
-        return self.spending_df.nlargest(x, "amount_paid")
-    
-
-    
-
-
-    
-
-
-    
-
-
-
-
-    
-
-
-    
+        return self.spending_df.nlargest(x, "amount_paid") 

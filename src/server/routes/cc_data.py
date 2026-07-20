@@ -1,26 +1,31 @@
 import os
 import re 
 import sys 
-import pathlib 
 import pandas as pd 
+from pathlib import Path 
+from datetime import datetime
 
 from io import BytesIO
 from flask import Blueprint, request, jsonify
+from flask_cors import cross_origin, CORS
 
 # Import repo dependencies 
 match = re.search(r".*fintracker\\src", os.path.abspath(__file__))
 if match:
-    src_path = str(pathlib.Path(match.group()))
+    src_path = str(Path(match.group()))
     if src_path not in sys.path:
         sys.path.append(src_path)
 
+from config.env_vars import * 
+from server.utils import route_utils
 from main import processCcDf, setupLocalDependencies
 from CreditCardManager.BofaCreditCard import BofaCreditCard
-from LocalFinDbManager.CreditCardDB import CreditCardDB, cleanDbDataFromDf
-from config.env_vars import * 
+from LocalFinDbManager.CreditCardDB import CreditCardDB 
+from DataAnalysis.SpendingAnalysisLayer import SpendingAnalysisManager
 
 # Begin CreditCardData Router 
-cc_bp  = Blueprint("bofaCreditCardInfo", __name__)
+cc_bp = Blueprint("bofaCreditCardInfo", __name__)
+CORS(cc_bp, origins = ["http://localhost:5173"])
 
 # **** POST CC INFO ********************************************************
 # Upload bofa cc data 
@@ -54,7 +59,6 @@ def uploadBofaCcDataCsv():
             "message" : str(E)
         }), 500 
 
-    # Write to db
     return jsonify({
         "status"  : "success",
         "message" : "file imported succesfully"
@@ -66,19 +70,42 @@ def uploadBofaCcDataCsv():
 def testGet(): 
     return {"status" : 200}
 
-@cc_bp.route("/getDaterangeBofaCcData", methods=["GET"])
+
+@cc_bp.route("/getDaterangeBofaCcData", methods=["POST"])
 def getDaterangeBasedInfo(): 
-    start_query = request.args.get("startdate")
-    end_query   = request.args.get("enddate")
-    # TODO 
+    data = request.get_json() 
+
+    status, message, df = route_utils.dbDaterangeQuery(data=data)
+
+    if status != 200: 
+        return jsonify({
+            "status"  : status,
+            "message" : message
+        }, status)    
+
+    print(df.columns)
+    return jsonify({
+        "status" : 200,
+        "body"   : route_utils.jsonifyDf(df)
+    })
 
 
-@cc_bp.route("/getMonthlyBofaCcData", methods=["GET"])
+@cc_bp.route("/getMonthlyRollup", methods=["POST"])
 def getMonthBasedInfo(): 
-    month_query = request.args.get("month")
-    year_query   = request.args.get("year")
-    # TODO 
+    data = request.get_json() 
 
+    status, message, df = route_utils.dbDaterangeQuery(data=data)
 
+    if status != 200: 
+        return jsonify({
+            "status"  : status,
+            "message" : message
+        }, status)    
 
+    spending_analysis = SpendingAnalysisManager(df)
+    monthly_df = spending_analysis.getMonthlySummary()
 
+    return jsonify({
+        "status" : 200,
+        "body"   : route_utils.jsonifyDf(monthly_df)
+    })
